@@ -86,7 +86,7 @@ async function run() {
         })
 
         // Get user role
-        app.get('/allBioData/', async (req, res) => {
+        app.get('/allBioData', async (req, res) => {
             const result = await editBioDataAllCollection.find().toArray()
             res.send(result)
         })
@@ -101,11 +101,28 @@ async function run() {
 
          //user send request to premium
          app.post('/premiumRequest', async (req, res) => {
-            const request = req.body
-            const result = await requestCollection.insertOne(request)
+            const requestData = req.body
+            const query ={ userEmail: requestData.userEmail}
+            const updateData ={
+                $set:{
+                    premiumRequestStatus:"pending",
+                }
+            }
+            const updateStatus =await editBioDataAllCollection.updateOne(query, updateData)
+            const result = await requestCollection.insertOne(requestData)
             res.send(result)
           })
 
+         //get manage users
+         app.get("/manageUsers", async(req, res)=>{
+            const result = await usersAllCollection.find().toArray()
+            res.send(result)
+          } )
+          //get request 
+          app.get("/premiumRequest", async(req, res)=>{
+            const result = await requestCollection.find().toArray()
+            res.send(result)
+          } )
         //post allBioData
         app.post("/allBioData", async (req, res) => {
             try {
@@ -114,7 +131,7 @@ async function run() {
                 const query = { userEmail: email }
                 const exist = await editBioDataAllCollection.findOne(query)
                 if (exist) {
-                    return res.send({ message: "user already exists", insertedId: null })
+                 return res.send({ message: "user already exists", insertedId: null })
                 }
                 const count = await editBioDataAllCollection.estimatedDocumentCount();
                 const result = await editBioDataAllCollection.insertOne({
@@ -128,6 +145,46 @@ async function run() {
             }
         })
 
+        //approve premium 
+        app.patch("/approvePremium", async(req, res)=>{
+            try{
+                const id = parseInt(req.query.id)
+                console.log(id);
+                const query = {biodataId: id} 
+                const query2 ={bioDataId: id}
+                console.log(query);
+                console.log(query2);
+                const updateDoc ={
+                    $set:{
+                        premiumRequestStatus:"approved",
+                        accountType:"premium"
+                    },
+                }
+                 const updateResult = await editBioDataAllCollection.updateOne(query, updateDoc)
+                 const updateResult2  ={
+                    $set:{
+                        premiumRequestStatus:"approved",
+                    }
+                 }
+                 const result = await requestCollection.updateOne(query2, updateResult2)
+                 console.log(result);
+                 res.send(result)
+            }catch(err){
+                console.log(err);
+            }
+        })
+         //all statistics 
+         app.get("/statistics", async(req, res)=>{
+            try{
+                const userInfo = await editBioDataAllCollection.estimatedDocumentCount();
+            const userMale= await editBioDataAllCollection.countDocuments({biodataType:'male'})
+            const userFemale = await editBioDataAllCollection.countDocuments({biodataType:'female'})
+            const premiumMember = await requestCollection.estimatedDocumentCount();
+            res.send({userInfo,userMale,userFemale,premiumMember})
+            }catch(err){
+                console.log(err);
+            }
+         })
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
