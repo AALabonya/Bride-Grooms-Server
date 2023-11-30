@@ -26,8 +26,6 @@ const client = new MongoClient(uri, {
 });
 
 
-
-
 async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
@@ -169,7 +167,7 @@ async function run() {
             }
 
           
-            const cursor = editBioDataAllCollection.find(queryObj).skip(page * 7).limit(7)
+            const cursor = editBioDataAllCollection.find(queryObj).skip(page * 6).limit(6)
 
             const result = await cursor.toArray()
             res.send(result)
